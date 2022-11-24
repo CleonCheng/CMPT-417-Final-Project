@@ -3,12 +3,11 @@ import argparse
 import glob
 from pathlib import Path
 from cbs import CBSSolver
-from independent import IndependentSolver
-from prioritized import PrioritizedPlanningSolver
 from visualize import Animation
 from single_agent_planner import get_sum_of_cost
 
-SOLVER = "CBS"
+HIGH_SOLVER = "CBS"
+LOW_SOLVER = "A*"
 
 def print_mapf_instance(my_map, starts, goals):
     print('Start locations')
@@ -75,10 +74,10 @@ if __name__ == '__main__':
                         help='The name of the instance file(s)')
     parser.add_argument('--batch', action='store_true', default=False,
                         help='Use batch output instead of animation')
-    parser.add_argument('--disjoint', action='store_true', default=False,
-                        help='Use the disjoint splitting')
-    parser.add_argument('--solver', type=str, default=SOLVER,
-                        help='The solver to use (one of: {CBS,Independent,Prioritized}), defaults to ' + str(SOLVER))
+    parser.add_argument('--lowlevel', type=str, default=LOW_SOLVER,
+                        help='The low-level solver to use (one of: {A*,LA*,AL*,IDA*}), defaults to ' + str(LOW_SOLVER))
+    parser.add_argument('--highlevel', type=str, default=HIGH_SOLVER,
+                        help='The high-level solver to use (one of: {CBS,ICTS}), defaults to ' + str(HIGH_SOLVER))
 
     args = parser.parse_args()
 
@@ -91,20 +90,32 @@ if __name__ == '__main__':
         my_map, starts, goals = import_mapf_instance(file)
         print_mapf_instance(my_map, starts, goals)
 
-        if args.solver == "CBS":
-            print("***Run CBS***")
-            cbs = CBSSolver(my_map, starts, goals)
-            paths = cbs.find_solution(args.disjoint)
-        elif args.solver == "Independent":
-            print("***Run Independent***")
-            solver = IndependentSolver(my_map, starts, goals)
-            paths = solver.find_solution()
-        elif args.solver == "Prioritized":
-            print("***Run Prioritized***")
-            solver = PrioritizedPlanningSolver(my_map, starts, goals)
-            paths = solver.find_solution()
+        # Resolves the low-level search.
+        # Lazy implementation, pass lowlevelsolver
+        # to the high level solver to choose which
+        # solver to use.
+        if args.lowlevel == "A*":
+            low_level_solver = "A*"
+        elif args.lowlevel == "LA*":
+            low_level_solver = "LA*"
+        elif args.lowlevel == "AL*":
+            low_level_solver = "AL*"
+        elif args.lowlevel == "IDA*":
+            low_level_solver = "IDA*"
         else:
-            raise RuntimeError("Unknown solver!")
+            raise RuntimeError("Unknown high-level solver!")
+
+        # Resolves the high-level search
+        if args.highlevel == "CBS":
+            print("***Run CBS***")
+            cbs = CBSSolver(my_map, starts, goals, low_level_solver)
+            paths = cbs.find_solution()
+        elif args.highlevel == "ICTS":
+            print("***Run ICTS***")
+            #icts = ICTSSolver(my_map, starts, goals, lowlevelsolver)
+            #paths = icts.find_solution()
+        else:
+            raise RuntimeError("Unknown high-level solver!")
 
         cost = get_sum_of_cost(paths)
         result_file.write("{},{}\n".format(file, cost))

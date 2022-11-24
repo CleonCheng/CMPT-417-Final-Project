@@ -1,9 +1,7 @@
 import time as timer
 import heapq
 import random
-from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost
-
-
+from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost, lazy_a_star, a_star_lookahead, iterative_deepening_a_star
 def detect_collision(path1, path2):
     ##############################
     # Task 3.1: Return the first collision that occurs between two robot paths (or None if there is no collision)
@@ -118,11 +116,10 @@ def disjoint_splitting(collision):
     return constraints
     pass
 
-
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals):
+    def __init__(self, my_map, starts, goals, low_level_solver):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -131,6 +128,7 @@ class CBSSolver(object):
         self.my_map = my_map
         self.starts = starts
         self.goals = goals
+        self.low_level_solver = low_level_solver
         self.num_of_agents = len(goals)
 
         self.num_of_generated = 0
@@ -139,10 +137,22 @@ class CBSSolver(object):
 
         self.open_list = []
 
-        # compute heuristics for the low-level search
+        # compute heuristics for the low-level search (unless we use lazy A*)
         self.heuristics = []
-        for goal in self.goals:
-            self.heuristics.append(compute_heuristics(my_map, goal))
+        if low_level_solver != "LA*":
+            for goal in self.goals:
+                self.heuristics.append(compute_heuristics(my_map, goal))
+
+    def low_level_solve_for_path(self, agent, constraints):
+        if self.low_level_solver == "A*":
+            return a_star(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], agent, constraints)
+        elif self.low_level_solver == "LA*":
+            return lazy_a_star(self.my_map, self.starts[agent], self.goals[agent], agent, constraints)
+        elif self.low_level_solver == "AL*":
+            return a_star_lookahead(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], agent, constraints)
+        elif self.low_level_solver == "IDA*":
+            return iterative_deepening_a_star(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], agent, constraints)
+        return None
 
     def push_node(self, node):
         heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
@@ -173,8 +183,7 @@ class CBSSolver(object):
                 'paths': [],
                 'collisions': []}
         for i in range(self.num_of_agents):  # Find initial path for each agent
-            path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
-                          i, root['constraints'])
+            path = self.low_level_solve_for_path(i, root['constraints'])
             if path is None:
                 raise BaseException('No solutions')
             root['paths'].append(path)
@@ -221,8 +230,7 @@ class CBSSolver(object):
                 child_paths = list(next_node['paths'])
                 child_node = {'cost': 0, 'constraints': child_constraints, 'paths': child_paths, 'collisions': []}
                 agent = constraint['agent']
-                new_path = a_star(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], agent,
-                                  child_node['constraints'])
+                new_path = self.low_level_solve_for_path(agent, child_node['constraints'])
 
                 # If a new path exists, add to the open list
                 if new_path:
@@ -252,8 +260,7 @@ class CBSSolver(object):
 
                                 # If agent i's path is violated by the current positive constraint, then re-find path for agent i
                                 if i in violated_paths:
-                                    new_path = a_star(self.my_map, self.starts[i], self.goals[i],
-                                                      self.heuristics[i], i, new_constraints)
+                                    new_path = self.low_level_solve_for_path(i, new_constraints)
                                     if not new_path:
                                         print("No Solutions for this positive constraint")
                                         no_solutions = True
