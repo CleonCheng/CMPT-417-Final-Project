@@ -238,15 +238,15 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     return None  # Failed to find solutions
 
 def lazy_a_star(my_map, start_loc, goal_loc, agent, constraints):
-    print("lazy_a_star")
+    raise BaseException('LA* Not Yet Implemented')
     return None
 
 def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
-    print("a_star_lookahead")
+    raise BaseException('AL* Not Yet Implemented')
     return None
 
 def iterative_deepening_a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
-    print("iterative_deepening_a_star")
+    raise BaseException('IDA* Not Yet Implemented')
     return None
 
 # Helper function that gets the max timestep value from a list on constraints

@@ -103,7 +103,7 @@ if __name__ == '__main__':
         elif args.lowlevel == "IDA*":
             low_level_solver = "IDA*"
         else:
-            raise RuntimeError("Unknown high-level solver!")
+            raise RuntimeError("Unknown low-level solver!")
 
         # Resolves the high-level search
         if args.highlevel == "CBS":
