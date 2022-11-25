@@ -1,7 +1,7 @@
 import time as timer
 import heapq
 import random
-from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost, lazy_a_star, a_star_lookahead, iterative_deepening_a_star
+from single_agent_planner import compute_heuristics, compute_heuristics_worse, a_star, get_location, get_sum_of_cost, lazy_a_star, a_star_lookahead, iterative_deepening_a_star
 def detect_collision(path1, path2):
     ##############################
     # Task 3.1: Return the first collision that occurs between two robot paths (or None if there is no collision)
@@ -137,17 +137,23 @@ class CBSSolver(object):
 
         self.open_list = []
 
-        # compute heuristics for the low-level search (unless we use lazy A*)
+        # For Lazy A* we use compute the manhattan distance for the heuristic,
+        # otherwise we compute the heuristic using the provided code
         self.heuristics = []
-        if low_level_solver != "LA*":
+        if low_level_solver == "LA*":
+            for goal in self.goals:
+                self.heuristics.append(compute_heuristics_worse(my_map, goal))
+        else:
             for goal in self.goals:
                 self.heuristics.append(compute_heuristics(my_map, goal))
+        for i in self.heuristics:
+            print(i)
 
     def low_level_solve_for_path(self, agent, constraints):
         if self.low_level_solver == "A*":
             return a_star(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], agent, constraints)
         elif self.low_level_solver == "LA*":
-            return lazy_a_star(self.my_map, self.starts[agent], self.goals[agent], agent, constraints)
+            return lazy_a_star(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], agent, constraints)
         elif self.low_level_solver == "AL*":
             return a_star_lookahead(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], agent, constraints)
         elif self.low_level_solver == "IDA*":
@@ -291,7 +297,7 @@ class CBSSolver(object):
     def print_results(self, node):
         print("\n Found a solution! \n")
         CPU_time = timer.time() - self.start_time
-        print("CPU time (s):    {:.2f}".format(CPU_time))
+        print("CPU time (s):    {:.20f}".format(CPU_time))
         print("Sum of costs:    {}".format(get_sum_of_cost(node['paths'])))
         print("Expanded nodes:  {}".format(self.num_of_expanded))
         print("Generated nodes: {}".format(self.num_of_generated))
