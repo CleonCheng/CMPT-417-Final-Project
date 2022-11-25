@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     for file in sorted(glob.glob(args.instance)):
 
-        print("***Import an instance***")
+        print("*** Import an instance ***")
         my_map, starts, goals = import_mapf_instance(file)
         print_mapf_instance(my_map, starts, goals)
 
@@ -107,11 +107,11 @@ if __name__ == '__main__':
 
         # Resolves the high-level search
         if args.highlevel == "CBS":
-            print("***Run CBS***")
+            print("*** Running CBS with "+str(low_level_solver)+" ***")
             cbs = CBSSolver(my_map, starts, goals, low_level_solver)
             paths = cbs.find_solution()
         elif args.highlevel == "ICTS":
-            print("***Run ICTS***")
+            print("*** Running ICTS with "+str(low_level_solver)+" ***")
             #icts = ICTSSolver(my_map, starts, goals, lowlevelsolver)
             #paths = icts.find_solution()
         else:
@@ -122,7 +122,7 @@ if __name__ == '__main__':
 
 
         if not args.batch:
-            print("***Test paths on a simulation***")
+            print("*** Test paths on a simulation ***")
             animation = Animation(my_map, starts, goals, paths)
             # animation.save("output.mp4", 1.0)
             animation.show()

@@ -146,8 +146,6 @@ class CBSSolver(object):
         else:
             for goal in self.goals:
                 self.heuristics.append(compute_heuristics(my_map, goal))
-        for i in self.heuristics:
-            print(i)
 
     def low_level_solve_for_path(self, agent, constraints):
         if self.low_level_solver == "A*":
@@ -297,7 +295,7 @@ class CBSSolver(object):
     def print_results(self, node):
         print("\n Found a solution! \n")
         CPU_time = timer.time() - self.start_time
-        print("CPU time (s):    {:.20f}".format(CPU_time))
+        print("CPU time (s):    {:.2f}".format(CPU_time))
         print("Sum of costs:    {}".format(get_sum_of_cost(node['paths'])))
         print("Expanded nodes:  {}".format(self.num_of_expanded))
         print("Generated nodes: {}".format(self.num_of_generated))
