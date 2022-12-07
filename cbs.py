@@ -1,7 +1,12 @@
 import time as timer
 import heapq
 import random
-from single_agent_planner import compute_heuristics, compute_heuristics_worse, a_star, get_location, get_sum_of_cost, lazy_a_star, a_star_lookahead, iterative_deepening_a_star
+from single_agent_planner import compute_heuristics, compute_heuristics_worse, get_location, get_sum_of_cost
+from a_star import a_star
+from lazy_a_star import lazy_a_star
+from iterative_a_star import iterative_deepening_a_star
+from a_star_lookahead import a_star_lookahead
+
 def detect_collision(path1, path2):
     ##############################
     # Task 3.1: Return the first collision that occurs between two robot paths (or None if there is no collision)
