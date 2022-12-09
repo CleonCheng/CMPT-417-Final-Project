@@ -1,4 +1,16 @@
+import math
+
 from single_agent_planner import *
+
+
+def push_node(open_list, node):
+    heapq.heappush(open_list, (node['stored_val'], node['g_val'] + node['h_val'], node['h_val'], node['loc'], node))
+
+
+def pop_node(open_list):
+    _, _, _, _, curr = heapq.heappop(open_list)
+    return curr
+
 
 def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
     """ my_map      - binary obstacle map
@@ -16,15 +28,16 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
     closed_list = dict()
     earliest_goal_timestep = 0
     h_value = h_values[start_loc]
-    depth = 2
+    depth = 4
 
     # build constraint table
     constraint_table = build_constraint_table(constraints, agent)
     if constraint_table:
         earliest_goal_timestep = max(constraint_table)
 
-    root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'collapsed_f': 0, 'timestep': 0, 'parent': None}
-    depth_first_search(my_map, start_loc, goal_loc, h_values, agent, constraints, root, depth)
+    root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'collapsed_f': 0, 'timestep': 0, 'parent': None,
+            'stored_val': -1}
+    root['stored_val'] = dfs(my_map, root, goal_loc, h_values, agent, constraint_table, depth)
     push_node(open_list, root)
     closed_list[((root['loc']), (root['timestep']))] = root
 
@@ -72,19 +85,23 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
                      'g_val': curr['g_val'] + 1,
                      'h_val': h_values[constraint_position],
                      'timestep': curr['timestep'] + 1,
-                     'parent': curr}
+                     'parent': curr,
+                     'stored_val': -1}
 
             loc = positive_constraint['loc']
-            if curr['loc'] in starting_positions and not is_constrained(curr['loc'], child['loc'], curr['timestep'] + 1, constraint_table):
+            if curr['loc'] in starting_positions and not is_constrained(curr['loc'], child['loc'], curr['timestep'] + 1,
+                                                                        constraint_table):
 
                 if (child['loc'], child['timestep']) in closed_list:
                     existing_node = closed_list[(child['loc'], child['timestep'])]
                     if compare_nodes(child, existing_node):
                         closed_list[(child['loc'], child['timestep'])] = child
+                        child['stored_val'] = dfs(my_map, child, goal_loc, h_values, agent, constraint_table, depth)
                         push_node(open_list, child)
                         pushed = True
                 else:
                     closed_list[(child['loc'], child['timestep'])] = child
+                    child['stored_val'] = dfs(my_map, child, goal_loc, h_values, agent, constraint_table, depth)
                     push_node(open_list, child)
                     pushed = True
 
@@ -114,25 +131,85 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
                          'g_val': curr['g_val'] + 1,
                          'h_val': h_values[child_loc],
                          'timestep': curr['timestep'] + 1,
-                         'parent': curr}
+                         'parent': curr,
+                         'stored_val': -1}
 
                 if (child['loc'], child['timestep']) in closed_list:
                     existing_node = closed_list[(child['loc'], child['timestep'])]
                     if compare_nodes(child, existing_node):
                         closed_list[(child['loc'], child['timestep'])] = child
+                        child['stored_val'] = dfs(my_map, child, goal_loc, h_values, agent, constraint_table, depth)
                         push_node(open_list, child)
                 else:
                     closed_list[(child['loc'], child['timestep'])] = child
+                    child['stored_val'] = dfs(my_map, child, goal_loc, h_values, agent, constraint_table, depth)
                     push_node(open_list, child)
 
     return None  # Failed to find solutions
 
-def depth_first_search(my_map, start_loc, goal_loc, h_values, agent, constraints, node, depth):
-    return None
 
-def collapse():
-    return None
+def dfs(my_map, start_node, goal_loc, h_values, agent, constraint_table, depth):
+    # Base Case, at the bounded depth
+    if depth <= 1:
 
-# def restore():
-#     # just do a bounded DFS
-#     return None
+        # initialize current minimum value
+        current_min = math.inf
+
+        # Recursively check each branch (i.e each direction)
+        for direction in range(5):
+            child_loc = move(start_node['loc'], direction)
+
+            # Make sure the new position is valid
+            if child_loc[0] < 0 or child_loc[1] < 0 or child_loc[0] >= len(my_map) or child_loc[1] >= len(my_map[0]):
+                continue
+            if my_map[child_loc[0]][child_loc[1]]:
+                continue
+            if is_constrained(start_node['loc'], child_loc, start_node['timestep'] + 1, constraint_table):
+                continue
+
+            # If valid make a child node
+            child_node = {'loc': child_loc,
+                          'g_val': start_node['g_val'] + 1,
+                          'h_val': h_values[child_loc],
+                          'timestep': start_node['timestep'] + 1,
+                          'parent': start_node,
+                          'stored_val': -1}
+
+            # Check the value and update current minimum value if necessary
+            if child_node['g_val'] + child_node['h_val'] < current_min:
+                current_min = child_node['g_val'] + child_node['h_val']
+
+        # Return current minimum
+        return current_min
+
+    # Recursive Case
+    else:
+        # initialize current minimum value
+        current_min = math.inf
+
+        # Recursively check each branch (i.e each direction)
+        for direction in range(5):
+            child_loc = move(start_node['loc'], direction)
+
+            # Make sure the new position is valid
+            if child_loc[0] < 0 or child_loc[1] < 0 or child_loc[0] >= len(my_map) or child_loc[1] >= len(my_map[0]):
+                continue
+            if my_map[child_loc[0]][child_loc[1]]:
+                continue
+            if is_constrained(start_node['loc'], child_loc, start_node['timestep'] + 1, constraint_table):
+                continue
+
+            # If valid make a child node
+            child_node = {'loc': child_loc,
+                          'g_val': start_node['g_val'] + 1,
+                          'h_val': h_values[child_loc],
+                          'timestep': start_node['timestep'] + 1,
+                          'parent': start_node,
+                          'stored_val': -1}
+
+            # Decrement the depth and recursively call itself
+            recursive_val = dfs(my_map, child_node, goal_loc, h_values, agent, constraint_table, depth - 1)
+            if recursive_val and recursive_val < current_min:
+                current_min = recursive_val
+
+    return current_min

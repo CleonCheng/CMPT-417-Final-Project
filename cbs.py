@@ -93,6 +93,7 @@ def disjoint_splitting(collision):
     # Choose random agent
     agents = [collision['a1'], collision['a2']]
     random_val = random.randint(0, 1)
+    random_val = 0
     agent = agents.pop(random_val)
 
     constraints = []
