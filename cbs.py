@@ -272,7 +272,7 @@ class CBSSolver(object):
                                 if i in violated_paths:
                                     new_path = self.low_level_solve_for_path(i, new_constraints)
                                     if not new_path:
-                                        print("No Solutions for this positive constraint")
+                                        #print("No Solutions for this positive constraint")
                                         no_solutions = True
                                         continue
                                     child_node['paths'][i] = new_path
@@ -305,6 +305,7 @@ class CBSSolver(object):
         print("Sum of costs:    {}".format(get_sum_of_cost(node['paths'])))
         print("Expanded nodes:  {}".format(self.num_of_expanded))
         print("Generated nodes: {}".format(self.num_of_generated))
+        print()
 
     def print_list_of_nodes(self, expanded_nodes):
         print()
