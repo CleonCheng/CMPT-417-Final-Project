@@ -27,6 +27,11 @@ def compute_heuristics_worse(my_map, goal):
 
 
 def compute_second_heuristic(my_map, start_loc, goal_loc):
+
+    # Edge case, at goal_loc
+    if start_loc == goal_loc:
+        return 0
+
     # Use Dijkstra to build a shortest-path tree rooted at the goal location
     open_list = []
     closed_list = dict()
