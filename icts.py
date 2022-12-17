@@ -227,6 +227,7 @@ class ICTSSolver(object):
 
         self.num_of_generated = 0
         self.num_of_expanded = 0
+        self.max_open_list = 0
         self.CPU_time = 0
 
         self.open_list = []
@@ -245,6 +246,8 @@ class ICTSSolver(object):
         heapq.heappush(self.open_list, (node['sum_cost'], self.num_of_generated, node))
         # print("Generate node {}".format(self.num_of_generated))
         self.num_of_generated += 1
+        if len(self.open_list) > self.max_open_list:
+            self.max_open_list = len(self.open_list)
 
     def pop_node(self):
         _, id, node = heapq.heappop(self.open_list)
@@ -338,6 +341,7 @@ class ICTSSolver(object):
         print("Sum of costs:    {}".format(node['sum_cost']))
         print("Expanded nodes:  {}".format(self.num_of_expanded))
         print("Generated nodes: {}".format(self.num_of_generated))
+        print("Max upper-level open list: {}".format(self.max_open_list))
 
     def low_level_solve_for_path(self, agent, constraints = []):
         if self.low_level_solver == "A*":
