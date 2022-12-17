@@ -3,6 +3,7 @@ import argparse
 import glob
 from pathlib import Path
 from cbs import CBSSolver
+from icts import ICTSSolver
 from visualize import Animation
 from single_agent_planner import get_sum_of_cost
 
@@ -114,8 +115,8 @@ if __name__ == '__main__':
             paths, CPU_time = cbs.find_solution()
         elif args.highlevel == "ICTS":
             print("*** Running ICTS with " + str(low_level_solver) + " ***")
-            # icts = ICTSSolver(my_map, starts, goals, lowlevelsolver)
-            # paths = icts.find_solution()
+            icts = ICTSSolver(my_map, starts, goals, low_level_solver)
+            paths = icts.find_solution()
         else:
             raise RuntimeError("Unknown high-level solver!")
 
