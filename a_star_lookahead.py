@@ -1,3 +1,4 @@
+from random import randint
 from single_agent_planner import *
 
 def push_node_lookahead(open_list, node):
@@ -80,14 +81,16 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
                      'h_val': h_values[constraint_position],
                      'stored_val': 0,
                      'timestep': curr['timestep'] + 1,
-                     'parent': curr}
+                     'parent': curr,
+                     'stored_val': -1}
 
             # if child['g_val'] + child['h_val'] < curr['stored_val']:
             #     child['stored_val'] = curr['stored_val']
             child['stored_val'] = depth_first_search(my_map, h_values, child, 0, depth_limit)
             
             loc = positive_constraint['loc']
-            if curr['loc'] in starting_positions and not is_constrained(curr['loc'], child['loc'], curr['timestep'] + 1, constraint_table):
+            if curr['loc'] in starting_positions and not is_constrained(curr['loc'], child['loc'], curr['timestep'] + 1,
+                                                                        constraint_table):
 
                 if (child['loc'], child['timestep']) in closed_list:
                     existing_node = closed_list[(child['loc'], child['timestep'])]
@@ -127,7 +130,8 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
                          'h_val': h_values[child_loc],
                          'stored_val': 0,
                          'timestep': curr['timestep'] + 1,
-                         'parent': curr}
+                         'parent': curr,
+                         'stored_val': -1}
 
                 child['stored_val'] = depth_first_search(my_map, h_values, child, 0, depth_limit)
 

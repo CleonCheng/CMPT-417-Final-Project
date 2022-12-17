@@ -93,6 +93,7 @@ def disjoint_splitting(collision):
     # Choose random agent
     agents = [collision['a1'], collision['a2']]
     random_val = random.randint(0, 1)
+    random_val = 0
     agent = agents.pop(random_val)
 
     constraints = []
@@ -223,9 +224,9 @@ class CBSSolver(object):
 
             # End condition, print list of expanded nodes (for debugging), print results, return path
             if not next_node['collisions']:
-                #self.print_list_of_nodes(expanded_nodes)
-                self.print_results(next_node)
-                return next_node['paths']
+                CPU_time = timer.time() - self.start_time
+                self.print_results(next_node, CPU_time)
+                return next_node['paths'], CPU_time
 
             # Get first collision and generate constraints
             collisions = next_node['collisions']
@@ -271,7 +272,7 @@ class CBSSolver(object):
                                 if i in violated_paths:
                                     new_path = self.low_level_solve_for_path(i, new_constraints)
                                     if not new_path:
-                                        print("No Solutions for this positive constraint")
+                                        #print("No Solutions for this positive constraint")
                                         no_solutions = True
                                         continue
                                     child_node['paths'][i] = new_path
@@ -288,22 +289,23 @@ class CBSSolver(object):
                     self.push_node(child_node)
 
                     #if self.num_of_generated % 1000 == 0:
-                    #    print(self.num_of_generated)
+                    #    print("# Generated Nodes: "+str(self.num_of_generated))
 
             # TEST STUFF DELETE
-            #tolerance = 99999
+            #tolerance = 3000
             #if self.num_of_generated > tolerance:
             #    raise BaseException('Over ' + str(tolerance))
 
-        return root['paths']
-
-    def print_results(self, node):
-        print("\n Found a solution! \n")
         CPU_time = timer.time() - self.start_time
-        print("CPU time (s):    {:.2f}".format(CPU_time))
+        return root['paths'], CPU_time
+
+    def print_results(self, node, time):
+        print("\n Found a solution! \n")
+        print("CPU time (s):    {:.2f}".format(time))
         print("Sum of costs:    {}".format(get_sum_of_cost(node['paths'])))
         print("Expanded nodes:  {}".format(self.num_of_expanded))
         print("Generated nodes: {}".format(self.num_of_generated))
+        print()
 
     def print_list_of_nodes(self, expanded_nodes):
         print()
