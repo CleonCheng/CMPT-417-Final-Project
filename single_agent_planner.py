@@ -2,7 +2,7 @@ import heapq
 
 
 def move(loc, dir):
-    directions = [(0, -1), (1, 0), (0, 1), (-1, 0), (0, 0)]
+    directions = [(0, 0), (1, 0), (0, 1), (-1, 0), (0, -1)]
     return loc[0] + directions[dir][0], loc[1] + directions[dir][1]
 
 
@@ -26,7 +26,12 @@ def compute_heuristics_worse(my_map, goal):
     return h_values
 
 
-def compute_second_heuristic(my_map, start_loc, goal_loc):
+def compute_second_heuristic(my_map, start_loc, goal_loc, second_h_table):
+
+    # Edge case, at goal_loc
+    if start_loc == goal_loc:
+        return second_h_table
+
     # Use Dijkstra to build a shortest-path tree rooted at the goal location
     open_list = []
     closed_list = dict()
@@ -35,12 +40,13 @@ def compute_second_heuristic(my_map, start_loc, goal_loc):
     closed_list[goal_loc] = root
     while len(open_list) > 0:
         (cost, loc, curr) = heapq.heappop(open_list)
-        for dir in range(4):
+        for dir in range(5):
             child_loc = move(loc, dir)
             child_cost = cost + 1
 
             if child_loc == start_loc:
-                return child_cost
+                second_h_table[child_loc] = child_cost
+                return second_h_table
 
             if child_loc[0] < 0 or child_loc[0] >= len(my_map) \
                     or child_loc[1] < 0 or child_loc[1] >= len(my_map[0]):
@@ -52,11 +58,11 @@ def compute_second_heuristic(my_map, start_loc, goal_loc):
                 existing_node = closed_list[child_loc]
                 if existing_node['cost'] > child_cost:
                     closed_list[child_loc] = child
-                    # open_list.delete((existing_node['cost'], existing_node['loc'], existing_node))
                     heapq.heappush(open_list, (child_cost, child_loc, child))
             else:
                 closed_list[child_loc] = child
                 heapq.heappush(open_list, (child_cost, child_loc, child))
+                second_h_table[child_loc] = child_cost
     raise BaseException('Cannot compute second heuristic for start: '+str(start_loc)+", goal: "+str(goal_loc))
 
 def compute_heuristics(my_map, goal):
@@ -68,7 +74,7 @@ def compute_heuristics(my_map, goal):
     closed_list[goal] = root
     while len(open_list) > 0:
         (cost, loc, curr) = heapq.heappop(open_list)
-        for dir in range(4):
+        for dir in range(5):
             child_loc = move(loc, dir)
             child_cost = cost + 1
             if child_loc[0] < 0 or child_loc[0] >= len(my_map) \
@@ -81,7 +87,6 @@ def compute_heuristics(my_map, goal):
                 existing_node = closed_list[child_loc]
                 if existing_node['cost'] > child_cost:
                     closed_list[child_loc] = child
-                    # open_list.delete((existing_node['cost'], existing_node['loc'], existing_node))
                     heapq.heappush(open_list, (child_cost, child_loc, child))
             else:
                 closed_list[child_loc] = child
