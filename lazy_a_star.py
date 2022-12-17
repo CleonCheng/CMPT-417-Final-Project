@@ -12,6 +12,10 @@ def lazy_a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     earliest_goal_timestep = 0
     h_value = h_values[start_loc]
 
+    # Set up table of second heuristics
+    second_h_table = dict()
+    second_h_table[goal_loc] = 0
+
     # build constraint table
     constraint_table = build_constraint_table(constraints, agent)
     if constraint_table:
@@ -34,9 +38,15 @@ def lazy_a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
         # Check if the current node only has the first heuristic calculated, if so compute the shortest path heuristic
         # update the h-value for this node and reinsert node and next a new current node from the open_list
         if curr['compute_second_heuristic']:
+
+            # Store a table of second heuristics, so we don't have to recalculate previously computed second heuristics
+            if curr['loc'] not in second_h_table:
+                second_h_table = compute_second_heuristic(my_map, curr['loc'], goal_loc, second_h_table)
+
+            h_val = second_h_table[curr['loc']]
             updated_curr = {'loc': curr['loc'],
                      'g_val': curr['g_val'],
-                     'h_val': compute_second_heuristic(my_map, curr['loc'], goal_loc),
+                     'h_val': h_val,
                      'timestep': curr['timestep'],
                      'parent': curr['parent'],
                      'compute_second_heuristic': False}

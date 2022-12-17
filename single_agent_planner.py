@@ -26,11 +26,11 @@ def compute_heuristics_worse(my_map, goal):
     return h_values
 
 
-def compute_second_heuristic(my_map, start_loc, goal_loc):
+def compute_second_heuristic(my_map, start_loc, goal_loc, second_h_table):
 
     # Edge case, at goal_loc
     if start_loc == goal_loc:
-        return 0
+        return second_h_table
 
     # Use Dijkstra to build a shortest-path tree rooted at the goal location
     open_list = []
@@ -45,7 +45,8 @@ def compute_second_heuristic(my_map, start_loc, goal_loc):
             child_cost = cost + 1
 
             if child_loc == start_loc:
-                return child_cost
+                second_h_table[child_loc] = child_cost
+                return second_h_table
 
             if child_loc[0] < 0 or child_loc[0] >= len(my_map) \
                     or child_loc[1] < 0 or child_loc[1] >= len(my_map[0]):
@@ -57,11 +58,11 @@ def compute_second_heuristic(my_map, start_loc, goal_loc):
                 existing_node = closed_list[child_loc]
                 if existing_node['cost'] > child_cost:
                     closed_list[child_loc] = child
-                    # open_list.delete((existing_node['cost'], existing_node['loc'], existing_node))
                     heapq.heappush(open_list, (child_cost, child_loc, child))
             else:
                 closed_list[child_loc] = child
                 heapq.heappush(open_list, (child_cost, child_loc, child))
+                second_h_table[child_loc] = child_cost
     raise BaseException('Cannot compute second heuristic for start: '+str(start_loc)+", goal: "+str(goal_loc))
 
 def compute_heuristics(my_map, goal):
