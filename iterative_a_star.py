@@ -3,21 +3,13 @@ from single_agent_planner import *
 
 def iterative_deepening_a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     bound = h_values[start_loc]
-    timeout_time = get_max_timestep(constraints) * (get_available_spaces(my_map)) ^ 2
 
-    #print(str(start_loc) + ", " + str(goal_loc) + ", " + str(agent))
     while True:
         solution_path, bound = iterative_search(my_map, start_loc, goal_loc, h_values, agent, constraints, bound)
-        #print(bound)
         if solution_path:
-            #print("solution")
             return solution_path
         if bound == -1 or bound == float('inf'):
-            #print("bound: " + str(bound))
             return None
-
-    # raise BaseException('IDA* Not Yet Implemented')
-    return None  # Failed to find solutions
 
 
 def iterative_search(my_map, start_loc, goal_loc, h_values, agent, constraints, bound):
@@ -51,12 +43,14 @@ def dfs(my_map, curr, goal_loc, h_values, agent, constraint_table, bound, earlie
         return None, -1
 
     # If goal reached return path
-    if curr['loc'] == goal_loc and curr['timestep'] > earliest_goal_timestep:
+    if curr['loc'] == goal_loc:
         solution_path = get_path(curr)
-        current_point = solution_path[-1]
-        while len(solution_path) >= 2 and solution_path[-2] == current_point:
-            solution_path.pop()
-        return solution_path, curr['g_val'] + curr['h_val']
+        # Check if future constraints invalidate this solution
+        if check_future_constraints(solution_path, constraint_table):
+            current_point = solution_path[-1]
+            while len(solution_path) >= 2 and solution_path[-2] == current_point:
+                solution_path.pop()
+            return solution_path, curr['g_val'] + curr['h_val']
 
     # Base Case, f_val > bound
     if bound < curr['g_val'] + curr['h_val']:
@@ -76,7 +70,8 @@ def dfs(my_map, curr, goal_loc, h_values, agent, constraint_table, bound, earlie
                  'parent': curr}
 
         # Decrement the depth and recursively call itself
-        solution_path, f_val = dfs(my_map, child, goal_loc, h_values, agent, constraint_table, bound, earliest_goal_timestep, timeout_time)
+        solution_path, f_val = dfs(my_map, child, goal_loc, h_values, agent, constraint_table, bound,
+                                   earliest_goal_timestep, timeout_time)
         if solution_path:
             return solution_path, f_val
         return solution_path, f_val
@@ -103,7 +98,8 @@ def dfs(my_map, curr, goal_loc, h_values, agent, constraint_table, bound, earlie
                  'parent': curr}
 
         # Decrement the depth and recursively call itself
-        solution_path, f_val = dfs(my_map, child, goal_loc, h_values, agent, constraint_table, bound, earliest_goal_timestep, timeout_time)
+        solution_path, f_val = dfs(my_map, child, goal_loc, h_values, agent, constraint_table, bound,
+                                   earliest_goal_timestep, timeout_time)
         if solution_path:
             return solution_path, f_val
         current_min = min(current_min, f_val)
@@ -131,5 +127,24 @@ def check_positive_constraints(curr, constraint_table):
             # Return f_val for bound checking
             # f_val = (curr['g_val'] + 1) + h_values[constraint_position]
             return True, child_loc
-
     return False, None
+
+
+def check_future_constraints(solution_path, constraint_table):
+    last_loc = solution_path[-1]
+    for timestep in constraint_table:
+        if timestep >= len(solution_path):
+            constraints = constraint_table.get(timestep)
+            for constraint in constraints:
+                if constraint['positive'] is False:
+                    if constraint['loc'][0] == last_loc:
+                        return False
+                    if len(constraint['loc']) == 2 and constraint['loc'][1] == last_loc:
+                        return False
+                if constraint['positive'] is True:
+                    if constraint['loc'][0] != last_loc:
+                        return False
+                    if len(constraint['loc']) == 2:
+                        return False
+    return True
+    # Check future constraints for the solution path to see if we need to create a longer path

@@ -2,7 +2,7 @@ import heapq
 
 
 def move(loc, dir):
-    directions = [(0, -1), (1, 0), (0, 1), (-1, 0), (0, 0)]
+    directions = [(0, 0), (1, 0), (0, 1), (-1, 0), (0, -1)]
     return loc[0] + directions[dir][0], loc[1] + directions[dir][1]
 
 
@@ -40,7 +40,7 @@ def compute_second_heuristic(my_map, start_loc, goal_loc, second_h_table):
     closed_list[goal_loc] = root
     while len(open_list) > 0:
         (cost, loc, curr) = heapq.heappop(open_list)
-        for dir in range(4):
+        for dir in range(5):
             child_loc = move(loc, dir)
             child_cost = cost + 1
 
@@ -74,7 +74,7 @@ def compute_heuristics(my_map, goal):
     closed_list[goal] = root
     while len(open_list) > 0:
         (cost, loc, curr) = heapq.heappop(open_list)
-        for dir in range(4):
+        for dir in range(5):
             child_loc = move(loc, dir)
             child_cost = cost + 1
             if child_loc[0] < 0 or child_loc[0] >= len(my_map) \
@@ -87,7 +87,6 @@ def compute_heuristics(my_map, goal):
                 existing_node = closed_list[child_loc]
                 if existing_node['cost'] > child_cost:
                     closed_list[child_loc] = child
-                    # open_list.delete((existing_node['cost'], existing_node['loc'], existing_node))
                     heapq.heappush(open_list, (child_cost, child_loc, child))
             else:
                 closed_list[child_loc] = child

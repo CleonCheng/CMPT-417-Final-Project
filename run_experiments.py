@@ -9,6 +9,7 @@ from single_agent_planner import get_sum_of_cost
 HIGH_SOLVER = "CBS"
 LOW_SOLVER = "A*"
 
+
 def print_mapf_instance(my_map, starts, goals):
     print('Start locations')
     print_locations(my_map, starts)
@@ -81,12 +82,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-
     result_file = open("results.csv", "w", buffering=1)
+    result_file.write("{},{},{}\n".format("Test Instance", "Cost", "CPU Time"))
 
     for file in sorted(glob.glob(args.instance)):
 
-        print("*** Import Instance "+file+" ***")
+        print("*** Import Instance " + file + " ***")
         my_map, starts, goals = import_mapf_instance(file)
         print_mapf_instance(my_map, starts, goals)
 
@@ -106,20 +107,23 @@ if __name__ == '__main__':
             raise RuntimeError("Unknown low-level solver!")
 
         # Resolves the high-level search
+        CPU_time = None
         if args.highlevel == "CBS":
-            print("*** Running CBS with "+str(low_level_solver)+" ***")
+            print("*** Running CBS with " + str(low_level_solver) + " ***")
             cbs = CBSSolver(my_map, starts, goals, low_level_solver)
-            paths = cbs.find_solution()
+            paths, CPU_time = cbs.find_solution()
         elif args.highlevel == "ICTS":
-            print("*** Running ICTS with "+str(low_level_solver)+" ***")
-            #icts = ICTSSolver(my_map, starts, goals, lowlevelsolver)
-            #paths = icts.find_solution()
+            print("*** Running ICTS with " + str(low_level_solver) + " ***")
+            # icts = ICTSSolver(my_map, starts, goals, lowlevelsolver)
+            # paths = icts.find_solution()
         else:
             raise RuntimeError("Unknown high-level solver!")
 
         cost = get_sum_of_cost(paths)
-        result_file.write("{},{}\n".format(file, cost))
-
+        time = None
+        if CPU_time is not None:
+            time = "{:.3f}".format(CPU_time)
+        result_file.write("{},{},{}\n".format(file, cost, time))
 
         if not args.batch:
             print("*** Test paths on a simulation ***")
