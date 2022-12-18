@@ -38,6 +38,7 @@ def build_mdd(map, start, goal, target_cost, timestep = 0, mdd = None):
         if len(mdd['tree'][timestep]) == 0:
             return None
         else:
+            mdd['tree'][timestep][0]['nodes'].append(mdd['tree'][timestep][0]['loc'])
             return mdd
     else:
         mdd = build_mdd(map, start, goal, target_cost, timestep + 1, mdd)
@@ -85,21 +86,23 @@ def merge_mdd(mdd_list, base_mdd = None):
     for timestep in range(max(base_mdd['horizon'], next_mdd['horizon']) + 1):
         merged_mdd['tree'].append([])
         
-        if timestep == next_mdd['horizon'] and base_mdd['horizon'] > next_mdd['horizon']:
-            next_mdd['tree'][timestep][0]['nodes'] = [next_mdd['tree'][timestep][0]['loc']]
+        #if timestep == next_mdd['horizon'] and base_mdd['horizon'] > next_mdd['horizon']:
+            #next_mdd['tree'][timestep][0]['nodes'] = [next_mdd['tree'][timestep][0]['loc']]
         
-        if timestep == len(base_mdd['tree']):
-            base_mdd['tree'].append([base_mdd['tree'][timestep - 1][0]])
-        if timestep == len(next_mdd['tree']):
-            next_mdd['tree'].append([next_mdd['tree'][timestep - 1][0]])
+        #if timestep == len(base_mdd['tree']):
+            #base_mdd['tree'].append([base_mdd['tree'][timestep - 1][0]])
+        #if timestep == len(next_mdd['tree']):
+            #next_mdd['tree'].append([next_mdd['tree'][timestep - 1][0]])
             
-        if timestep == next_mdd['horizon'] and base_mdd['horizon'] == next_mdd['horizon']:
-            base_mdd['tree'][timestep][0]['nodes'] = []
-            next_mdd['tree'][timestep][0]['nodes'] = []
+        #if timestep == next_mdd['horizon'] and base_mdd['horizon'] == next_mdd['horizon']:
+            #base_mdd['tree'][timestep][0]['nodes'] = []
+            #next_mdd['tree'][timestep][0]['nodes'] = []
         
         #print(timestep, "-", len(base_mdd['tree']), "/", len(next_mdd['tree']))
-        for nodeB in base_mdd['tree'][timestep]:
-            for nodeN in next_mdd['tree'][timestep]:
+        timeB = min(timestep, len(base_mdd['tree']) - 1)
+        timeN = min(timestep, len(next_mdd['tree']) - 1)
+        for nodeB in base_mdd['tree'][timeB]:
+            for nodeN in next_mdd['tree'][timeN]:
                 
                 branches = []
                 for branchB in nodeB['nodes']:
@@ -200,6 +203,9 @@ def search_mdd(mdd):
     while len(next_nodes) > 0:
         next_node = next_nodes.pop()
         
+        if mdd['horizon'] == 0:
+            return next_node['path']
+        
         for node in mdd['tree'][next_node['time']]:
             if node['loc'] == next_node['loc']:
                 if next_node['time'] == mdd['horizon']:
@@ -229,7 +235,6 @@ class ICTSSolver(object):
         self.num_of_expanded = 0
         self.max_open_list = 0
         self.open_list = []
-        self.last_node = None
         self.independence_detection = True
 
         # For Lazy A* we use compute the manhattan distance for the heuristic,
@@ -286,6 +291,7 @@ class ICTSSolver(object):
         
         #3 repeat
         while True:
+            #print("GROUPS:", [x['agents'] for x in groups])
             
             #4 Simulate execution of all paths until a conflict occurs
             conflict = None
@@ -314,13 +320,21 @@ class ICTSSolver(object):
             #6 Try to resolve the conflict [optional]
             #7 if Conflict was not resolved then
             if conflict is not None:
+                #print("CONFLICT:", conflict)
                 
                 #8 Merge two conflicting groups into a single group
                 #9 Plan a path for the merged group
                 group1 = get_group(groups, conflict[0])
                 group2 = get_group(groups, conflict[1])
                 new_paths = self.run_icts(group1['agents'] + group2['agents'])
+                #print("PATHS:", new_paths)
                 new_group = {'agents': group1['agents'] + group2['agents'], 'paths': new_paths}
+                #for agent_index in range(len(new_group['agents'])):
+                    #agent = new_group['agents'][agent_index]
+                    #if len(paths[agent]) != len(new_paths[agent_index]):
+                        #print("CHANGED " + str(agent) + ":", len(paths[agent]), "->", len(new_paths[agent_index]))
+                        #if agent != conflict[0] and agent != conflict[1]:
+                            #new_paths[agent_index] = paths[agent]
                 groups.remove(group1)
                 groups.remove(group2)
                 groups.append(new_group)
@@ -330,8 +344,15 @@ class ICTSSolver(object):
                 break
 
         #11 return paths of all groups combined
-        print(paths)
-        self.print_results(self.last_node)
+        for path in paths:
+            if len(path) <= 1:
+                continue
+            loc_index = len(path) - 1
+            while path[loc_index] == path[loc_index - 1] and loc_index > 0:
+                path.pop()
+                loc_index = len(path) - 1
+        #print(paths)
+        self.print_results(paths)
         CPU_time = timer.time() - self.start_time
         return paths, CPU_time
     
@@ -368,15 +389,10 @@ class ICTSSolver(object):
                 mdd_list.append(build_mdd(self.my_map, self.starts[agent], self.goals[agent], target_cost))
 
             #5 [ //optional
-
             #6 foreach pair (triple) of agents do
-
                 #7 Perform node-pruning
-
                 #8 if node-pruning failed then
-
                     #9 Break //Conflict found. Next ICT node
-
             #10 ]
 
             #11 Search the k-agent MDD search space // low-level search
@@ -385,7 +401,8 @@ class ICTSSolver(object):
 
             #12 if goal node was found then
             if validate_mdd(final_mdd):
-            
+                #print_mdd(final_mdd)
+                
                 #13 return Solution
                 raw_paths = search_mdd(final_mdd)
                 if raw_paths is None:
@@ -397,6 +414,7 @@ class ICTSSolver(object):
                         for loc in raw_paths:
                             path.append(loc[agent_index])
                         paths.append(path)
+                        #print(next_node['costs'][agent_index], "->", len(path) - 1)
                     
                     self.last_node = next_node
                     return paths
@@ -413,14 +431,15 @@ class ICTSSolver(object):
         
         return None
 
-    def print_results(self, node):
+    def print_results(self, paths):
         print("\n Found a solution! \n")
         CPU_time = timer.time() - self.start_time
         print("CPU time (s):    {:.2f}".format(CPU_time))
-        print("Sum of costs:    {}".format(node['sum_cost']))
+        print("All costs:       {}".format([len(x)-1 for x in paths]))
+        print("Sum of costs:    {}".format(sum([len(x)-1 for x in paths])))
         print("Expanded nodes:  {}".format(self.num_of_expanded))
         print("Generated nodes: {}".format(self.num_of_generated))
-        print("Max upper-level open list: {}".format(self.max_open_list))
+        print("Max open-list:   {}".format(self.max_open_list))
 
     def low_level_solve_for_path(self, agent, constraints = []):
         if self.low_level_solver == "A*":
