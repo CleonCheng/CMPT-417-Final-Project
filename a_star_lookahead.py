@@ -31,7 +31,7 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
         earliest_goal_timestep = max(constraint_table)
 
     root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'stored_val': 0, 'timestep': 0, 'parent': None}
-    root['stored_val'] = depth_first_search(my_map, h_values, root, 0, depth_limit)
+    root['stored_val'] = depth_first_search(my_map, h_values, root, 0, depth_limit, constraint_table)
     # print("this is the root ",root['stored_val'])
     push_node_lookahead(open_list, root)
     closed_list[((root['loc']), (root['timestep']))] = root
@@ -86,7 +86,7 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
 
             # if child['g_val'] + child['h_val'] < curr['stored_val']:
             #     child['stored_val'] = curr['stored_val']
-            child['stored_val'] = depth_first_search(my_map, h_values, child, 0, depth_limit)
+            child['stored_val'] = depth_first_search(my_map, h_values, child, 0, depth_limit, constraint_table)
             
             loc = positive_constraint['loc']
             if curr['loc'] in starting_positions and not is_constrained(curr['loc'], child['loc'], curr['timestep'] + 1,
@@ -133,7 +133,7 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
                          'parent': curr,
                          'stored_val': -1}
 
-                child['stored_val'] = depth_first_search(my_map, h_values, child, 0, depth_limit)
+                child['stored_val'] = depth_first_search(my_map, h_values, child, 0, depth_limit, constraint_table)
 
                 if (child['loc'], child['timestep']) in closed_list:
                     existing_node = closed_list[(child['loc'], child['timestep'])]
@@ -146,7 +146,7 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
 
     return None  # Failed to find solutions
 
-def depth_first_search(my_map, h_values, node, depth_curr, depth_limit):
+def depth_first_search(my_map, h_values, node, depth_curr, depth_limit, constraint_table):
     # traverses the tree using depth-first search
     # returns the lowest f-value at the specified depth
 
@@ -157,31 +157,72 @@ def depth_first_search(my_map, h_values, node, depth_curr, depth_limit):
     if depth_curr == depth_limit:
         # print("returning best_f: " ,node['g_val'] + node['h_val'], "at depth ", depth_curr)
         return node['g_val'] + node['h_val']
-    
-    for dir in range(5):
-        child_loc = move(node['loc'], dir)
 
-        if child_loc[0] < 0 or child_loc[1] < 0 or child_loc[0] >= len(my_map) or child_loc[1] >= len(
-                my_map[0]):
-            continue
-
-        if my_map[child_loc[0]][child_loc[1]]:
-            continue
-
+     # If there is a positive constraint only move to that position
+    isConstrained, child_loc = check_positive_constraints(node, constraint_table)
+    if isConstrained:
+        # Make a child node
         child = {'loc': child_loc,
                  'g_val': node['g_val'] + 1,
                  'h_val': h_values[child_loc],
                  'stored_val': 0,
                  'timestep': node['timestep'] + 1,
                  'parent': node}
-        
-        f_candidate = depth_first_search(my_map, h_values, child, depth_curr, depth_limit)
+
+        f_candidate = depth_first_search(my_map, h_values, child, depth_curr, depth_limit, constraint_table)
 
         # update best_f value
         if best_f == None:
             best_f = f_candidate   
         best_f = min(best_f, f_candidate)
+    else:
+        for dir in range(5):
+            child_loc = move(node['loc'], dir)
+
+            if child_loc[0] < 0 or child_loc[1] < 0 or child_loc[0] >= len(my_map) or child_loc[1] >= len(
+                    my_map[0]):
+                continue
+
+            if my_map[child_loc[0]][child_loc[1]]:
+                continue
+
+            child = {'loc': child_loc,
+                    'g_val': node['g_val'] + 1,
+                    'h_val': h_values[child_loc],
+                    'stored_val': 0,
+                    'timestep': node['timestep'] + 1,
+                    'parent': node}
+            
+            f_candidate = depth_first_search(my_map, h_values, child, depth_curr, depth_limit, constraint_table)
+
+            # update best_f value
+            if best_f == None:
+                best_f = f_candidate   
+            best_f = min(best_f, f_candidate)
 
     # print("returning test: " ,test, "at depth ", depth_curr)
     
     return best_f
+
+def check_positive_constraints(curr, constraint_table):
+    # If positive constraint exists for current timestep and current location is right, move to that location only
+    positive_constraints = get_positive_constraints(curr['loc'], curr['timestep'] + 1, constraint_table)
+    if positive_constraints:
+
+        positive_constraint = positive_constraints[0]
+        constraint_position = None
+        starting_positions = []
+        if len(positive_constraint['loc']) == 1:
+            constraint_position = positive_constraint['loc'][0]
+            starting_positions = neighboring_squares(constraint_position)
+        if len(positive_constraint['loc']) == 2:
+            starting_positions = [positive_constraint['loc'][0]]
+            constraint_position = positive_constraint['loc'][1]
+        child_loc = constraint_position
+
+        if curr['loc'] in starting_positions and not is_constrained(curr['loc'], child_loc, curr['timestep'] + 1,
+                                                                    constraint_table):
+            # Return f_val for bound checking
+            # f_val = (curr['g_val'] + 1) + h_values[constraint_position]
+            return True, child_loc
+    return False, None
