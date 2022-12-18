@@ -228,9 +228,9 @@ class ICTSSolver(object):
         self.num_of_generated = 0
         self.num_of_expanded = 0
         self.max_open_list = 0
-        self.CPU_time = 0
-
         self.open_list = []
+        self.last_node = None
+        self.independence_detection = True
 
         # For Lazy A* we use compute the manhattan distance for the heuristic,
         # otherwise we compute the heuristic using the provided code
@@ -244,23 +244,104 @@ class ICTSSolver(object):
 
     def push_node(self, node):
         heapq.heappush(self.open_list, (node['sum_cost'], self.num_of_generated, node))
-        # print("Generate node {}".format(self.num_of_generated))
+        #print("Generating Node " + str(self.num_of_generated) + ":", node['costs'])
         self.num_of_generated += 1
         if len(self.open_list) > self.max_open_list:
             self.max_open_list = len(self.open_list)
 
     def pop_node(self):
         _, id, node = heapq.heappop(self.open_list)
-        # print("Expand node {}".format(id))
+        #print("Expanding Node " + str(id) + ":", node['costs'])
         self.num_of_expanded += 1
         return node
 
     def find_solution(self):
-        #1 Build the root of the ICT
         self.start_time = timer.time()
+        
+        if not self.independence_detection:
+            return self.run_icts(range(self.num_of_agents))
+        
+        def get_group(groups, agent):
+            for group in groups:
+                if agent in group['agents']:
+                    return group
+            return None
+        
+        def get_paths(groups):
+            paths = []
+            for agent in range(self.num_of_agents):
+                paths.append([])
+            for group in groups:
+                for agent_index in range(len(group['agents'])):
+                    paths[group['agents'][agent_index]] = group['paths'][agent_index]
+            return paths
+        
+        #1 Assign each agent to a singleton group
+        #2 Plan a path for each group
+        paths = []
+        groups = []
+        for agent in range(self.num_of_agents):
+            path = self.run_icts([agent])
+            groups.append({'agents': [agent], 'paths': path})
+        
+        #3 repeat
+        while True:
+            
+            #4 Simulate execution of all paths until a conflict occurs
+            conflict = None
+            paths = get_paths(groups)
+            max_time = 0
+            for path in paths:
+                if len(path) > max_time:
+                    max_time = len(path)
+            for timestep in range(max_time):
+                for agent1 in range(self.num_of_agents):
+                    for agent2 in range(self.num_of_agents):
+                        if agent1 != agent2:
+                            if paths[agent1][min(timestep, len(paths[agent1]) - 1)] == paths[agent2][min(timestep, len(paths[agent2]) - 1)]:
+                                conflict = (agent1, agent2)
+                            if timestep > 0 and timestep < len(paths[agent1]) and timestep < len(paths[agent2]):
+                                if paths[agent1][timestep - 1] == paths[agent2][timestep] and paths[agent1][timestep] == paths[agent2][timestep - 1]:
+                                    conflict = (agent1, agent2)
+                        if conflict is not None:
+                            break
+                    if conflict is not None:
+                        break
+                if conflict is not None:
+                    break
+            
+            #5 if Conflict occurred then
+            #6 Try to resolve the conflict [optional]
+            #7 if Conflict was not resolved then
+            if conflict is not None:
+                
+                #8 Merge two conflicting groups into a single group
+                #9 Plan a path for the merged group
+                group1 = get_group(groups, conflict[0])
+                group2 = get_group(groups, conflict[1])
+                new_paths = self.run_icts(group1['agents'] + group2['agents'])
+                new_group = {'agents': group1['agents'] + group2['agents'], 'paths': new_paths}
+                groups.remove(group1)
+                groups.remove(group2)
+                groups.append(new_group)
+
+            #10 until No conflicts occur;
+            else:
+                break
+
+        #11 return paths of all groups combined
+        print(paths)
+        self.print_results(self.last_node)
+        CPU_time = timer.time() - self.start_time
+        return paths, CPU_time
+    
+    def run_icts(self, agents):
+        self.open_list = []
+        
+        #1 Build the root of the ICT
         root = {'sum_cost': 0, 'costs': []}
         sum = 0
-        for agent in range(self.num_of_agents):
+        for agent in agents:
             path = self.low_level_solve_for_path(agent)
             if path is None:
                 raise BaseException('No solutions')
@@ -278,13 +359,12 @@ class ICTSSolver(object):
             expanded_nodes.append(next_node)
             mdd_list = []
             
-            print("Evaluating Node:", next_node['costs'])
-
             #3 foreach agent ai do
-            for agent in range(self.num_of_agents):
+            for agent_index in range(len(agents)):
+                agent = agents[agent_index]
             
                 #4 Build the corresponding MDDi
-                target_cost = next_node['costs'][agent]
+                target_cost = next_node['costs'][agent_index]
                 mdd_list.append(build_mdd(self.my_map, self.starts[agent], self.goals[agent], target_cost))
 
             #5 [ //optional
@@ -312,23 +392,22 @@ class ICTSSolver(object):
                     print("FATAL ERROR: SEARCH OF COMPLETE MDD RETURNED NO PATH")
                 else:
                     paths = []
-                    for agent in range(self.num_of_agents):
+                    for agent_index in range(len(agents)):
                         path = []
                         for loc in raw_paths:
-                            path.append(loc[agent])
+                            path.append(loc[agent_index])
                         paths.append(path)
                     
-                    self.print_results(next_node)
+                    self.last_node = next_node
                     return paths
                 
             else:
-                for agent in range(self.num_of_agents):
+                for agent_index in range(len(agents)):
                     costs = []
-                    for a in range(self.num_of_agents):
-                        costs.append(next_node['costs'][a])
-                    costs[agent] = costs[agent] + 1
+                    for ai in range(len(agents)):
+                        costs.append(next_node['costs'][ai])
+                    costs[agent_index] = costs[agent_index] + 1
                     if tuple(costs) not in generated_nodes:
-                        print("Adding", costs)
                         self.push_node({'sum_cost': next_node['sum_cost'] + 1, 'costs': costs})
                         generated_nodes.add(tuple(costs))
         

@@ -116,7 +116,7 @@ if __name__ == '__main__':
         elif args.highlevel == "ICTS":
             print("*** Running ICTS with " + str(low_level_solver) + " ***")
             icts = ICTSSolver(my_map, starts, goals, low_level_solver)
-            paths = icts.find_solution()
+            paths, CPU_time = icts.find_solution()
         else:
             raise RuntimeError("Unknown high-level solver!")
 
