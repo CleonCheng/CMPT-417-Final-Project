@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # check if directory exists or not and makes it if it does not
+    # check if directory exists or not and creates one if it does not
     if not os.path.isdir("./test_instances"):
         os.makedirs("./test_instances")
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     obstacle_weights = [0.5] * map_area
 
     # for each map instance
-    for index in range(0,9):
+    for index in range(0,25):
         agent_loc = []
         goal_loc = []
         obstacle_loc = 0
@@ -79,21 +79,6 @@ if __name__ == '__main__':
         # create new text file
         with open("test_{}.txt".format(index), "w+") as f:
             f.write("{map_length} {map_length}\n".format(map_length = map_length))
-
-            # create obstacles
-            # for map_row in range(map_length):
-            #     for map_column in range(map_length):
-            #         block_chance = random.uniform(0, 1)
-            #         if block_chance < map_density:
-            #             map_array[map_row][map_column] = 1
-
-            # for index in range(num_obstacles):
-            #     x_loc = random.randint(0, map_length - 1)
-            #     y_loc = random.randint(0, map_length - 1)
-            #     while((x_loc, y_loc)) in obstacle_loc:
-            #         x_loc = random.randint(0, map_length - 1)
-            #         y_loc = random.randint(0, map_length - 1)
-            #     obstacle_loc.append((x_loc, y_loc))
 
             for index in range(num_obstacles):
                 obstacle_loc = int(np.random.choice(range(map_area), 1, obstacle_weights))
