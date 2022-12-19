@@ -139,6 +139,7 @@ class CBSSolver(object):
 
         self.num_of_generated = 0
         self.num_of_expanded = 0
+        self.max_open_list = 0
         self.CPU_time = 0
 
         self.open_list = []
@@ -168,6 +169,9 @@ class CBSSolver(object):
         heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
         # print("Generate node {}".format(self.num_of_generated))
         self.num_of_generated += 1
+        # print(len(self.open_list))
+        if len(self.open_list) > self.max_open_list:
+            self.max_open_list = len(self.open_list)
 
     def pop_node(self):
         _, _, id, node = heapq.heappop(self.open_list)
@@ -305,6 +309,7 @@ class CBSSolver(object):
         print("Sum of costs:    {}".format(get_sum_of_cost(node['paths'])))
         print("Expanded nodes:  {}".format(self.num_of_expanded))
         print("Generated nodes: {}".format(self.num_of_generated))
+        print("Max upper-level open list: {}".format(self.max_open_list))
         print()
 
     def print_list_of_nodes(self, expanded_nodes):
