@@ -13,6 +13,8 @@ def is_wall(map, loc):
     else:
         return map[loc[0]][loc[1]]
 
+# multi-value decision diagram (MDD) helper functions
+
 def print_mdd(mdd):
     print("MDD from", mdd['start'], "to", mdd['goal'], "of time", mdd['horizon'])
     for timestep in range(mdd['horizon'] + 1):
@@ -217,6 +219,8 @@ def search_mdd(mdd):
     
     return None
 
+# Independence Detection and ICTS
+
 class ICTSSolver(object):
 
     def __init__(self, my_map, starts, goals, low_level_solver):
@@ -256,7 +260,8 @@ class ICTSSolver(object):
 
     def pop_node(self):
         _, id, node = heapq.heappop(self.open_list)
-        #print("Expanding Node " + str(id) + ":", node['costs'])
+        #if id % 100 == 0:
+            #print("Expanding Node " + str(id) + " with cost", node['sum_cost'])
         self.num_of_expanded += 1
         return node
 
@@ -359,6 +364,8 @@ class ICTSSolver(object):
     def run_icts(self, agents):
         self.open_list = []
         
+        time = timer.time()
+        
         #1 Build the root of the ICT
         root = {'sum_cost': 0, 'costs': []}
         sum = 0
@@ -374,9 +381,12 @@ class ICTSSolver(object):
 
         #2 foreach ICT node in a breadth-first manner do
         generated_nodes = set()
+        #generated_nodes.add(tuple(root['costs']))
         expanded_nodes = []
         while len(self.open_list) > 0:
             next_node = self.pop_node()
+            #print("Next:", tuple(next_node['costs']))
+            #generated_nodes.remove(tuple(next_node['costs']))
             expanded_nodes.append(next_node)
             mdd_list = []
             
@@ -417,14 +427,16 @@ class ICTSSolver(object):
                         #print(next_node['costs'][agent_index], "->", len(path) - 1)
                     
                     self.last_node = next_node
+                    #print("Time: {:.2f}".format(timer.time() - time))
+                    #print("Size:", len(generated_nodes))
                     return paths
                 
             else:
-                for agent_index in range(len(agents)):
+                for agent in agents:
                     costs = []
-                    for ai in range(len(agents)):
-                        costs.append(next_node['costs'][ai])
-                    costs[agent_index] = costs[agent_index] + 1
+                    for agent_index in range(len(agents)):
+                        costs.append(next_node['costs'][agent_index])
+                    costs[agents.index(agent)] = costs[agents.index(agent)] + 1
                     if tuple(costs) not in generated_nodes:
                         self.push_node({'sum_cost': next_node['sum_cost'] + 1, 'costs': costs})
                         generated_nodes.add(tuple(costs))
