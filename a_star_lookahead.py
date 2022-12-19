@@ -43,7 +43,6 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
         timeout_time = get_max_timestep(constraints) * (get_available_spaces(my_map)) ^ 2
 
     while len(open_list) > 0:
-
         curr = pop_node(open_list)
 
         # Timeout condition if current timestep is greater than timeout_time
@@ -157,7 +156,7 @@ def depth_first_search(my_map, h_values, node, depth_curr, depth_limit):
     if depth_curr == depth_limit:
         # print("returning best_f: " ,node['g_val'] + node['h_val'], "at depth ", depth_curr)
         return node['g_val'] + node['h_val']
-    
+
     for dir in range(5):
         child_loc = move(node['loc'], dir)
 
@@ -169,11 +168,11 @@ def depth_first_search(my_map, h_values, node, depth_curr, depth_limit):
             continue
 
         child = {'loc': child_loc,
-                 'g_val': node['g_val'] + 1,
-                 'h_val': h_values[child_loc],
-                 'stored_val': 0,
-                 'timestep': node['timestep'] + 1,
-                 'parent': node}
+                'g_val': node['g_val'] + 1,
+                'h_val': h_values[child_loc],
+                'stored_val': 0,
+                'timestep': node['timestep'] + 1,
+                'parent': node}
         
         f_candidate = depth_first_search(my_map, h_values, child, depth_curr, depth_limit)
 
