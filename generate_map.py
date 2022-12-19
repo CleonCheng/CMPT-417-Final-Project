@@ -169,15 +169,17 @@ if __name__ == '__main__':
                         help='The length of a map')
     parser.add_argument('--density', type=float, default=0.1,
                         help='The density of obstacles in the map')
+    parser.add_argument('--folder', type=str, default="test_instances",
+                        help='The folder to save instances to')
 
     args = parser.parse_args()
 
     # check if directory exists or not and creates one if it does not
-    if not os.path.isdir("./test_instances"):
-        os.makedirs("./test_instances")
+    if not os.path.isdir("./" + args.folder):
+        os.makedirs("./" + args.folder)
 
     # set working directory
-    os.chdir("./test_instances")
+    os.chdir("./" + args.folder)
 
     num_agents = args.agents
     map_length = args.length
