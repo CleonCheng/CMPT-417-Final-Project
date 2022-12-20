@@ -230,7 +230,7 @@ class CBSSolver(object):
             if not next_node['collisions']:
                 CPU_time = timer.time() - self.start_time
                 self.print_results(next_node, CPU_time)
-                return next_node['paths'], CPU_time
+                return next_node['paths'], CPU_time, self.num_of_expanded, self.num_of_generated, self.max_open_list
 
             # Get first collision and generate constraints
             collisions = next_node['collisions']
@@ -301,7 +301,7 @@ class CBSSolver(object):
             #    raise BaseException('Over ' + str(tolerance))
 
         CPU_time = timer.time() - self.start_time
-        return root['paths'], CPU_time
+        return root['paths'], CPU_time, self.num_of_expanded, self.num_of_generated, self.max_open_list
 
     def print_results(self, node, time):
         print("\n Found a solution! \n")

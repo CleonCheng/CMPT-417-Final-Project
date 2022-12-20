@@ -359,7 +359,7 @@ class ICTSSolver(object):
         #print(paths)
         self.print_results(paths)
         CPU_time = timer.time() - self.start_time
-        return paths, CPU_time
+        return paths, CPU_time, self.num_of_expanded, self.num_of_generated, self.max_open_list
     
     def run_icts(self, agents):
         self.open_list = []

@@ -23,7 +23,7 @@ def a_star_lookahead(my_map, start_loc, goal_loc, h_values, agent, constraints):
     closed_list = dict()
     earliest_goal_timestep = 0
     h_value = h_values[start_loc]
-    depth_limit = 2
+    depth_limit = 4
 
     # build constraint table
     constraint_table = build_constraint_table(constraints, agent)
