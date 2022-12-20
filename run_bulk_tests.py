@@ -23,13 +23,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     result_file = open(args.saveto, "w", buffering=1)
-    result_file.write("{},{},{},{},{},{},{},{}\n".format("Test Instance", "High-Level Solver", "Low-Level Solver", "Cost", "CPU Time", "# Generated", "# Expanded", "# in Open-List at Max"))
+    result_file.write("{},{},{},{},{},{},{},{}\n".format("Test Instance", "High-Level Solver", "Low-Level Solver", "Cost", "CPU Time", "# Expanded", "# Generated", "# in Open-List at Max"))
 
-    high_level_solvers = ["ICTS", "CBS"]
+    high_level_solvers = ["CBS", "ICTS"]
     low_level_solvers = ["A*", "LA*", "AL*", "IDA*"]
 
     for high_level_solver in high_level_solvers:
         for low_level_solver in low_level_solvers:
+            #if high_level_solver == "CBS" and low_level_solver == "IDA*":
+                #continue
             for file in sorted(glob.glob(args.instance)):
 
                 print("*** Import Instance " + file + " ***")
@@ -47,17 +49,17 @@ if __name__ == '__main__':
                     if high_level_solver == "CBS":
                         print("*** Running CBS with " + str(low_level_solver) + " ***")
                         cbs = CBSSolver(my_map, starts, goals, low_level_solver)
-                        paths, CPU_time, generated, expanded, openlistsize = cbs.find_solution()
+                        paths, CPU_time, expanded, generated, openlistsize = cbs.find_solution()
                     elif high_level_solver == "ICTS":
                         print("*** Running ICTS with " + str(low_level_solver) + " ***")
                         icts = ICTSSolver(my_map, starts, goals, low_level_solver)
-                        paths, CPU_time, generated, expanded, openlistsize = icts.find_solution()
+                        paths, CPU_time, expanded, generated, openlistsize = icts.find_solution()
                     else:
                         raise RuntimeError("Unknown high-level solver!")
                     
                     avg_CPU_time = avg_CPU_time + CPU_time
                     
-                    if CPU_time > 120:
+                    if CPU_time > 60:
                         avg_CPU_time = CPU_time * args.num_runs
                         break
 
@@ -67,6 +69,6 @@ if __name__ == '__main__':
                 time = None
                 if avg_CPU_time is not None:
                     time = "{:.3f}".format(avg_CPU_time)
-                result_file.write("{},{},{},{},{},{},{},{}\n".format(file, high_level_solver, low_level_solver, cost, time, generated, expanded, openlistsize))
+                result_file.write("{},{},{},{},{},{},{},{}\n".format(file, high_level_solver, low_level_solver, cost, time, expanded, generated, openlistsize))
 
     result_file.close()
